@@ -1,3 +1,6 @@
+const express = require('express');
+const router = express.Router();
+const { New } = require('../models/NewModel');
 
 /**
  * @swagger
@@ -58,7 +61,7 @@
 
 /**
  * @swagger
- * /noticias:
+ * /news:
  *   get:
  *     summary: Obtener todas las noticias
  *     tags: [News]
@@ -72,9 +75,14 @@
  *               items:
  *                 $ref: '#/components/schemas/News'
  */
+router.get('/', async (req, res) => {
+  const news = await New.findAll();
+  res.json(news);
+});
+
 /**
  * @swagger
- * /noticias/{id}:
+ * /news/{id}:
  *   get:
  *     summary: Obtener una noticia por ID
  *     tags: [News]
@@ -95,9 +103,15 @@
  *       404:
  *         description: Noticia no encontrada
  */
+router.get('/:id', async (req, res) => {
+  const news = await New.findByPk(req.params.id);
+  if (!news) return res.status(404).json({ error: 'Noticia no encontrada' });
+  res.json(news);
+});
+
 /**
  * @swagger
- * /noticias:
+ * /news:
  *   post:
  *     summary: Crear una noticia
  *     tags: [News]
@@ -115,9 +129,18 @@
  *             schema:
  *               $ref: '#/components/schemas/News'
  */
+router.post('/', async (req, res) => {
+  try {
+    const news = await New.create(req.body);
+    res.status(201).json(news);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 /**
  * @swagger
- * /noticias/{id}:
+ * /news/{id}:
  *   put:
  *     summary: Actualizar una noticia
  *     tags: [News]
@@ -144,9 +167,16 @@
  *       404:
  *         description: Noticia no encontrada
  */
+router.put('/:id', async (req, res) => {
+  const news = await New.findByPk(req.params.id);
+  if (!news) return res.status(404).json({ error: 'Noticia no encontrada' });
+  await news.update(req.body);
+  res.json(news);
+});
+
 /**
  * @swagger
- * /noticias/{id}:
+ * /news/{id}:
  *   delete:
  *     summary: Eliminar una noticia
  *     tags: [News]
@@ -163,21 +193,11 @@
  *       404:
  *         description: Noticia no encontrada
  */
+router.delete('/:id', async (req, res) => {
+  const news = await New.findByPk(req.params.id);
+  if (!news) return res.status(404).json({ error: 'Noticia no encontrada' });
+  await news.destroy();
+  res.status(204).send();
+});
 
-const express = require('express');
-
-const { get, getById, create, update, destroy } = require('../controllers/NewController');
-const { validatorNewCreate, validatorNewUpdate } = require('../validators/NewValidator');
-const { authenticateAdmin, authenticateAny } = require('../middlewares/jwt')
-
-
-
-const api = express.Router();
-
-api.get('/noticias', get);
-api.get('/noticias/:id', getById)
-api.post('/noticias', authenticateAny, validatorNewCreate, create)
-api.put('/noticias/:id', authenticateAny, validatorNewUpdate, update)
-api.delete('/noticias/:id', authenticateAny,  destroy)
-
-module.exports = api;
+module.exports = router;

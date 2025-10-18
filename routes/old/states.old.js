@@ -1,3 +1,7 @@
+const express = require('express');
+const router = express.Router();
+const { State } = require('../models/StateModel');
+
 /**
  * @swagger
  * components:
@@ -41,7 +45,7 @@
 
 /**
  * @swagger
- * /estados:
+ * /states:
  *   get:
  *     summary: Obtener todos los estados
  *     tags: [States]
@@ -55,9 +59,14 @@
  *               items:
  *                 $ref: '#/components/schemas/State'
  */
+router.get('/', async (req, res) => {
+  const states = await State.findAll();
+  res.json(states);
+});
+
 /**
  * @swagger
- * /estados/{id}:
+ * /states/{id}:
  *   get:
  *     summary: Obtener un estado por ID
  *     tags: [States]
@@ -78,27 +87,18 @@
  *       404:
  *         description: Estado no encontrado
  */
+router.get('/:id', async (req, res) => {
+  const state = await State.findByPk(req.params.id);
+  if (!state) return res.status(404).json({ error: 'Estado no encontrado' });
+  res.json(state);
+});
 
-var express = require('express');
-
-
-const {get, getById, create, update, destroy}  = require('../controllers/StateController');
-const {validatorStateRequire, validatorStateOptional} = require('../validators/StateValidator')
-const { authenticateAdmin } = require('../middlewares/jwt')
-
-const api = express.Router();
-
-api.get('/estados', get);
-api.get('/estados/:id', getById)
-// Crear estado (solo admin)
 /**
  * @swagger
- * /estados:
+ * /states:
  *   post:
- *     summary: Crear un nuevo estado
+ *     summary: Crear un estado
  *     tags: [States]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -108,18 +108,26 @@ api.get('/estados/:id', getById)
  *     responses:
  *       201:
  *         description: Estado creado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/State'
  */
-api.post('/estados', authenticateAdmin, validatorStateRequire, create)
+router.post('/', async (req, res) => {
+  try {
+    const state = await State.create(req.body);
+    res.status(201).json(state);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
-// Actualizar estado por id (solo admin)
 /**
  * @swagger
- * /estados/{id}:
+ * /states/{id}:
  *   put:
- *     summary: Actualizar un estado por ID
+ *     summary: Actualizar un estado
  *     tags: [States]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -136,18 +144,26 @@ api.post('/estados', authenticateAdmin, validatorStateRequire, create)
  *     responses:
  *       200:
  *         description: Estado actualizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/State'
+ *       404:
+ *         description: Estado no encontrado
  */
-api.put('/estados/:id', authenticateAdmin, validatorStateOptional, update)
+router.put('/:id', async (req, res) => {
+  const state = await State.findByPk(req.params.id);
+  if (!state) return res.status(404).json({ error: 'Estado no encontrado' });
+  await state.update(req.body);
+  res.json(state);
+});
 
-// Eliminar estado por id (solo admin)
 /**
  * @swagger
- * /estados/{id}:
+ * /states/{id}:
  *   delete:
- *     summary: Eliminar un estado por ID
+ *     summary: Eliminar un estado
  *     tags: [States]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -156,10 +172,16 @@ api.put('/estados/:id', authenticateAdmin, validatorStateOptional, update)
  *         required: true
  *         description: ID del estado
  *     responses:
- *       200:
+ *       204:
  *         description: Estado eliminado
+ *       404:
+ *         description: Estado no encontrado
  */
-api.delete('/estados/:id', authenticateAdmin, destroy)
+router.delete('/:id', async (req, res) => {
+  const state = await State.findByPk(req.params.id);
+  if (!state) return res.status(404).json({ error: 'Estado no encontrado' });
+  await state.destroy();
+  res.status(204).send();
+});
 
-
-module.exports = api;
+module.exports = router;

@@ -1,3 +1,7 @@
+const express = require('express');
+const router = express.Router();
+const { Profile } = require('../models/ProfileModel');
+
 /**
  * @swagger
  * components:
@@ -21,7 +25,7 @@
 
 /**
  * @swagger
- * /perfiles:
+ * /profiles:
  *   get:
  *     summary: Obtener todos los perfiles
  *     tags: [Profiles]
@@ -35,9 +39,14 @@
  *               items:
  *                 $ref: '#/components/schemas/Profile'
  */
+router.get('/', async (req, res) => {
+  const profiles = await Profile.findAll();
+  res.json(profiles);
+});
+
 /**
  * @swagger
- * /perfiles/{id}:
+ * /profiles/{id}:
  *   get:
  *     summary: Obtener un perfil por ID
  *     tags: [Profiles]
@@ -58,29 +67,18 @@
  *       404:
  *         description: Perfil no encontrado
  */
+router.get('/:id', async (req, res) => {
+  const profile = await Profile.findByPk(req.params.id);
+  if (!profile) return res.status(404).json({ error: 'Perfil no encontrado' });
+  res.json(profile);
+});
 
-var express = require('express');
-
-const {get, getById, }  = require('../controllers/ProfileController');
-const { authenticateAdmin } = require('../middlewares/jwt')
-const { create, update, destroy } = require('../controllers/ProfileController');
-const { validatorProfileCreate, validatorProfileUpdate } = require('../validators/ProfileValidator');
-
-
-const api = express.Router();
-
-api.get('/perfiles', get);
-api.get('/perfiles/:id', getById)
-
-// Crear, actualizar y eliminar perfiles (solo admin)
 /**
  * @swagger
- * /perfiles:
+ * /profiles:
  *   post:
- *     summary: Crear un nuevo perfil
+ *     summary: Crear un perfil
  *     tags: [Profiles]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -90,17 +88,26 @@ api.get('/perfiles/:id', getById)
  *     responses:
  *       201:
  *         description: Perfil creado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Profile'
  */
-api.post('/perfiles', authenticateAdmin, validatorProfileCreate, create)
+router.post('/', async (req, res) => {
+  try {
+    const profile = await Profile.create(req.body);
+    res.status(201).json(profile);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
 
 /**
  * @swagger
- * /perfiles/{id}:
+ * /profiles/{id}:
  *   put:
- *     summary: Actualizar un perfil por ID
+ *     summary: Actualizar un perfil
  *     tags: [Profiles]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -117,17 +124,26 @@ api.post('/perfiles', authenticateAdmin, validatorProfileCreate, create)
  *     responses:
  *       200:
  *         description: Perfil actualizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Profile'
+ *       404:
+ *         description: Perfil no encontrado
  */
-api.put('/perfiles/:id', authenticateAdmin, validatorProfileUpdate, update)
+router.put('/:id', async (req, res) => {
+  const profile = await Profile.findByPk(req.params.id);
+  if (!profile) return res.status(404).json({ error: 'Perfil no encontrado' });
+  await profile.update(req.body);
+  res.json(profile);
+});
 
 /**
  * @swagger
- * /perfiles/{id}:
+ * /profiles/{id}:
  *   delete:
- *     summary: Eliminar un perfil por ID
+ *     summary: Eliminar un perfil
  *     tags: [Profiles]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -136,10 +152,16 @@ api.put('/perfiles/:id', authenticateAdmin, validatorProfileUpdate, update)
  *         required: true
  *         description: ID del perfil
  *     responses:
- *       200:
+ *       204:
  *         description: Perfil eliminado
+ *       404:
+ *         description: Perfil no encontrado
  */
-api.delete('/perfiles/:id', authenticateAdmin, destroy)
+router.delete('/:id', async (req, res) => {
+  const profile = await Profile.findByPk(req.params.id);
+  if (!profile) return res.status(404).json({ error: 'Perfil no encontrado' });
+  await profile.destroy();
+  res.status(204).send();
+});
 
-
-module.exports = api;
+module.exports = router;

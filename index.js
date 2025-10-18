@@ -1,26 +1,11 @@
-const express = require('express');
-const app = express();
-const PORT = 3000;
+// index.js ahora actúa como servidor: importa app y levanta el listener
+const { PORT } = require('./config');
+const app = require('./app');
 
 // Importar la conexión para probarla
 require('./config.db');
 
-app.use(express.json());
-
-// Exportar rutas
-const profile_routes = require('./routes/ProfileRoute');
-
-// Usar las rutas
-app.use('/api', profile_routes);
-
-// Rutas principales
-app.use('/news', require('./routes/news'));
-app.use('/states', require('./routes/states'));
-app.use('/users', require('./routes/users'));
-app.use('/categories', require('./routes/categories'));
-app.use('/profiles', require('./routes/profiles'));
-
-// Swagger UI
+// Swagger UI (se monta desde aquí porque index.js hace listen)
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));

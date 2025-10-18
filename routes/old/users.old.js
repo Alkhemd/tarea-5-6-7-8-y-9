@@ -1,3 +1,7 @@
+const express = require('express');
+const router = express.Router();
+const { User } = require('../models/UserModel');
+
 /**
  * @swagger
  * components:
@@ -53,7 +57,7 @@
 
 /**
  * @swagger
- * /usuarios:
+ * /users:
  *   get:
  *     summary: Obtener todos los usuarios
  *     tags: [Users]
@@ -67,9 +71,14 @@
  *               items:
  *                 $ref: '#/components/schemas/User'
  */
+router.get('/', async (req, res) => {
+  const users = await User.findAll();
+  res.json(users);
+});
+
 /**
  * @swagger
- * /usuarios/{id}:
+ * /users/{id}:
  *   get:
  *     summary: Obtener un usuario por ID
  *     tags: [Users]
@@ -90,9 +99,15 @@
  *       404:
  *         description: Usuario no encontrado
  */
+router.get('/:id', async (req, res) => {
+  const user = await User.findByPk(req.params.id);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  res.json(user);
+});
+
 /**
  * @swagger
- * /usuarios:
+ * /users:
  *   post:
  *     summary: Crear un usuario
  *     tags: [Users]
@@ -110,9 +125,18 @@
  *             schema:
  *               $ref: '#/components/schemas/User'
  */
+router.post('/', async (req, res) => {
+  try {
+    const user = await User.create(req.body);
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 /**
  * @swagger
- * /usuarios/{id}:
+ * /users/{id}:
  *   put:
  *     summary: Actualizar un usuario
  *     tags: [Users]
@@ -139,9 +163,16 @@
  *       404:
  *         description: Usuario no encontrado
  */
+router.put('/:id', async (req, res) => {
+  const user = await User.findByPk(req.params.id);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  await user.update(req.body);
+  res.json(user);
+});
+
 /**
  * @swagger
- * /usuarios/{id}:
+ * /users/{id}:
  *   delete:
  *     summary: Eliminar un usuario
  *     tags: [Users]
@@ -158,21 +189,11 @@
  *       404:
  *         description: Usuario no encontrado
  */
+router.delete('/:id', async (req, res) => {
+  const user = await User.findByPk(req.params.id);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  await user.destroy();
+  res.status(204).send();
+});
 
-var express = require('express');
-
-const { get, getById, create, update, destroy } = require('../controllers/UserController');
-const { validatorUserCreate, validatorUserUpdate } = require('../validators/UserValidator');
-const { authenticateAdmin } = require('../middlewares/jwt')
-
-
-const api = express.Router();
-
-api.get('/usuarios', authenticateAdmin, get);
-api.get('/usuarios/:id', authenticateAdmin, getById)
-api.post('/usuarios', authenticateAdmin, validatorUserCreate, create)
-api.put('/usuarios/:id',authenticateAdmin, validatorUserUpdate, update)
-api.delete('/usuarios/:id', authenticateAdmin, destroy)
-
-
-module.exports = api;
+module.exports = router;
